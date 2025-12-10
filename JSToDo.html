@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo Lite</title>
+    <!---iphone用追加要素-->
+    <link rel="manifest" href="mainifest.json">
+    <link rel="apple-touch-icon" href="icon-192.ong">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #111827;
+            --muted: #94a3b8;
+            --text: #e5e7eb;
+            --accent: #38bdf8;
+            --accent2: #22d3ee;
+            --danger: #f87171;
+            --ok: #34d399;
+            --border: #1f2937;
+            --shadow: 0 10px 25px rgba(0,0,0,.35);
+        }
+        *{ box-sizing: border-box;}
+        html, body { height: 100%;}
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 800px at 20% -10%, rgba(56,189,248,.15), transparent 60%),
+                        radial-gradient(900px 700px at 120% 10%, rgba(34,211,238,.12), transparent 60%),
+                        var(--bg);
+            color: var(--text);
+            font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+        }
+
+        .app {
+            max-width: 720px;
+            margin: 48px auto;
+            padding: 24px;
+            background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(6px);
+        }
+        h1 {
+            margin: 4px 0 16px;
+            font-size: 28px;
+            letter-spacing: .02cm;
+            display: flex; align-items: center; gap: 12px;
+        }
+
+        h1::after {
+            content: "";
+            flex: 1 1 auto; height: 1px; background: linear-gradient(90deg, var(--accent), transparent);
+            opacity: .4;
+        }
+
+        #new-form {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 12px;
+        }
+
+        #new-input {
+            width: 100%;
+            background: #0b1220;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            outline: none;
+        }
+        #new-input::placeholder { color: var(--muted); }
+        #add-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #001018;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        #add-btn:active { transform: translateY(1px); }
+
+        #sort-deadline {
+            background: #0b1220;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        #sort-deadline:hover {
+            color: var(--text);
+            border-color: #334155;
+        }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+            margin: 14px 2px 4px;
+        }
+        .filters { display: inline-flex; gap: 6px; background: var(--card); border: 1px solid var(--border); padding: 6px; border-radius: 12px; }
+        .filter {
+            background: transparent; color: var(--text); border: 1px solid transparent; border-radius: 10px; padding: 6px 10px; cursor: pointer; font-weight: 600;
+        }
+        .filter.is-active {
+            border-color: var(--text);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, .15) inset;
+        }
+
+        .bulk { display: inline-flex; gap: 8px; }
+        .bulk button { background: #0b1220; color: var(--muted); border: 1px solid var(--border); border-radius: 10px; cursor: pointer;}
+        .bulk button:hover { color: var(--text); border-color: #331465; }
+
+        .list {
+            list-style: none; padding: 0; margin: 12px 0 0;
+            display: grid; gap: 10px;
+        }
+        .item {
+            display: grid; grid-template-columns: 36px 1fr auto; gap: 8px; align-items: center;
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px;
+        }
+
+        .item.completed .title {
+            color: var(--muted);
+            text-decoration: line-through;
+        }
+        .checkbox { display: grid; place-items: center;}
+        .checkbox input { position: absolute; opacity: 0; width: 0; height: 0;}
+        .checkmark { 
+            width: 20px; height: 20px; border-radius: 6px;
+            border: 1px solid #334155; display: inline-grid; place-items: center; font-size: 14px;  
+        }
+
+        .item.completed .checkmark { border-color: var(--ok); box-shadow: 0 0 0 2px rgba(52, 211, 153, .15) inset; }
+        .title { padding: 8px 10px; border-radius: 8px; min-height: 20px;}
+        .title:focus { outline: 2px solid var(--accent); }
+        .edit { display: none; width: 100%; background: #0b1220; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+        .item.editing .title { display: none;}
+        .item.editing .edit { display: block;}
+
+        .delete {
+            background: #0b1220; color: var(--muted) var(--border)1px solid var(--border); border-radius: 10px; padding: 6px 10px; cursor: pointer;
+        }
+        .delete:hover { color: #fff; border-color: #3f2a2a; background: #1a1010;}
+        .delete:active { transform: translateY(1px);}
+
+        .meta { display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 14px; color: var(--muted); font-size: 14px;}
+        .hint { opacity: .8;}
+
+        @media ( max-width: 520px) {
+            .app { margin: 24px 12px; padding: 16px;}
+            .controls { gap: 8px; }
+            .bulk { width: 100%; justify-content: space-between;}
+        }
+
+    </style>
+</head>
+<body>
+    <main class="app" aria-labelledby="app-title">
+        <h1 id="app-title">Todo</h1>
+
+        <form id="new-form" autocomplete="off" aria-label="新規タスクの追加">
+            <input id="new-input" type="text" placeholder="やることを入力して Enter" aria-label="やること" />
+                       <!----期限付き用追加要素----> 
+            <input id="new-date" type="date" aria-label="期限" />
+            <button id="add-btn" type="submit" aria-label="タスクを追加">追加</button>
+        </form>
+
+        <div class="controls">
+            <div class="filters" role="tablist" aria-label="表示フィルタ">
+                <button class="filter is-active" data-filter="all" role="tab" aria-selected="true">すべて</button>
+                <button class="filter" data-filter="active" role="tab" aria-selected="false">未完了</button>
+                <button class="filter" data-filter="completed" role="tab" aria-selected="false">完了</button>
+            </div>
+            <div class="bulk">
+                <button id="toggle-all" type="button" title="すべて切り替え">全選択/解除</button>
+                <button id="clear-completed" type="button" title="完了タスクを削除">完了を削除</button>
+                <!---期限順用追加-->
+                <button id="sort-deadlilne" type="button" title="期限順に並び替え">期限が近い順</button>
+            </div>
+        </div>
+
+        <ul id="list" class="list" aria-live="polite" aria-label="タスクリスト"></ul>
+
+        <footer class="meta">
+            <span id="count">0 件</span>
+            <span class="hint">ヒント: ダブルクリックで編集 / Enterで決定 / Escで取り消し</span>
+        </footer>
+    </main>
+
+    <template id="item-tpl">
+        <li class="item" data-id="">
+            <label class="checkbox" title="完了にする">
+                <input type="checkbox" class="toggle" />
+                <span class="checkmark">✔︎</span>
+            </label>
+            <span class="title" tabindex="0"></span>
+            <span class="deadline"></span>
+            <input class="edit" type="text" aria-label="タスク名を編集" />
+            <button class="delete" aria-label="このタスクを削除">削除</button>
+        </li>
+    </template>
+
+    <script>
+        //----状態管理----
+        const STORAGE_KEY = 'todos-v1';
+        const state = {
+            todos: [], //{ id, title, completed, createdAt, deadline}
+            filter: 'all', // 'all'| 'active' | 'completed'
+        };
+
+        const $ = (sel, root=document) => root.querySelector(sel);
+        const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+        const els = {
+            form: $('#new-form'),
+            input: $('#new-input'),
+            //---期限付き用追加要素
+            date: $('#new-date'),
+            list: $('#list'),
+            count: $('#count'),
+            filters: $$('.filter'),
+            toggleAll: $('#toggle-all'),
+            clearCompleted: $('#clear-completed'),
+            tpl: $('#item-tpl'),
+            //---期限順番用追加
+            sortDeadline: $('#sort-deadline'),
+        };
+
+        function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+        function save() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state.todos));
+            } catch (e) {
+                console.error('Cannot access localStorage', e);
+            }
+        }
+
+        function load() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                state.todos = raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                state.todos =[];
+            }
+        }
+
+        function applyFilter(list, filter) {
+            if (filter === 'active') return list.filter(t =>!t.completed);
+            if (filter === 'completed') return list.filter(t => t.completed);
+            return list; 
+        }
+
+        function updateCount() {
+            const remaining = state.todos.filter(t => !t.completed).length;
+            els.count.textContent = `${remaining} 件 未完了`;
+        }
+
+        function render() {
+            els.list.innerHTML = '';
+            const items = applyFilter(state.todos, state.filter);
+            for (const t of items) {
+                const li = els.tpl.content.firstElementChild.cloneNode(true);
+                li.dataset.id =t.id;
+                if (t.completed) li.classList.add('completed');
+                $('.toggle', li).checked = t.completed;
+                $('.title', li).textContent = t.title;
+                $('.edit', li).value = t.title;
+                els.list.appendChild(li);
+                //期限付き用追加要素
+                const dl = $('.deadline', li);
+                if(t.deadline) {
+                    dl.textContent = `期限: ${t.deadline}`;
+
+                    //期限切れの色付け
+                    const today = new Date().toISOString().slice(0, 10);
+                    if (t.deadline < today && !t.completed) {
+                        dl.style.color = `var(--danger)`; //赤色
+                    } else {
+                        dl.style.color = '';
+                    }
+                } else {
+                    dl.textContent = '';
+                }
+            }
+            updateCount();
+            // フィルタのUI反映
+            els.filters.forEach(btn => {
+                btn.classList.toggle('is-active', btn.dataset.filter === state.filter);
+                btn.setAttribute('aria-selected', btn.dataset.filter === state.filter);
+            });
+        }
+
+        // ----CRUD----
+        function addTodo(title) {
+            const trimmed = title.trim();
+            if (!trimmed) return;
+            state.todos.unshift({ id: uid(), title: trimmed, completed: false, createdAt: Date.now(), deadline: els.date.value || null });
+            save();
+            render();
+        }
+
+        function toggleTodo(id, completed) {
+            const t = state.todos.find(x => x.id === id);
+            if (!t) return;
+            t.completed = completed;
+            save();
+            render();
+        }
+
+        function removeTodo(id) {
+            state.todos = state.todos.filter(x => x.id !== id);
+            save();
+            render();
+        }
+
+        function renameTodo(id, newTitle) {
+            const t = state.todos.find(x => x.id === id);
+            if (!t) return;
+            const trimmed = newTitle.trim();
+            if (!trimmed) {
+                removeTodo(id);
+                return;
+            }
+            t.title = trimmed;
+            save();
+            render();
+        }
+
+         function sortByDeadline() {
+            state.todos.sort((a, b) => {
+                //期限なしは一番下にしたい
+                if (!a.deadline && !b.deadline) return 0;
+                if (!a.deadline) return 1;
+                if (!b.deadline) return -1;
+
+                //期限が早い順(文字列比較)
+                return a.deadline.localeCompare(b.deadline);
+            });
+
+            save();
+            render();
+        }
+
+        //-----イベント-----
+        els.form.addEventListener('submit', e => {
+            e.preventDefault();
+            addTodo(els.input.value);
+            els.input.value = '';
+            //期限付き用追加要素
+            els.date.value = '';
+            els.input.focus();
+        });
+
+        els.filters.forEach(btn => btn.addEventListener('click', () => {
+            state.filter = btn.dataset.filter;
+            render();
+        }));
+
+        els.toggleAll.addEventListener('click', () => {
+            const allCompleted = state.todos.length && state.todos.every(t => t.completed);
+            state.todos.forEach(t => t.completed = !allCompleted);
+            save();
+            render();
+        });
+
+        els.clearCompleted.addEventListener('click', () => {
+            state.todos = state.todos.filter(t => !t.completed);
+            save();
+            render();
+        });
+
+        // リスト内はイベント委譲で１箇所にまとめる
+        els.list.addEventListener('click', e => {
+            const li = e.target.closest('.item');
+            if (!li) return;
+            const id = li.dataset.id;
+
+            if (e.target.classList.contains('delete')) {
+                removeTodo(id);
+            } else if (e.target.classList.contains('toggle')) {
+                toggleTodo(id,  e.target.checked);
+            }
+        });
+
+        els.list.addEventListener('dblclick', e => {
+            const li = e.target.closest('.item');
+            if (!li) return;
+            if (!e.target. classList.contains('title')) return;
+            li.classList.add('editing');
+            const input = $('.edit', li);
+            input.value = $('.title', li).textContent;
+            setTimeout(() => input.focus(), 0);
+        });
+
+        els.list.addEventListener('keydown', e => {
+            const li = e.target.closest('.item');
+            if (!li) return;
+            const id = li.dataset.id;
+
+            //Enter: 編集確定 / Esc: 取消
+            if (e.target.classList.contains('edit')) {
+                if (e,key === 'Enter') {
+                    renameTodo(id, e.target.value);
+                } else if (e.key === 'Escape') {
+                    li.classList.remove('editing');
+                }
+            }
+        });
+
+        els.list.addEventListener('focusout', e => {
+            const li = e.target.closest('.item');
+            if (!li) return;
+            if (e.target.classList.contains('edit')) {
+                // フォーカスが編集欄から外れたら書く編集欄から外れたら確定
+                const od = li.dataset.id;
+                renameTodo(id, e.target.value);
+            }
+        });
+
+        //期限順用追加
+        els.sortDeadline.addEventListener('click', () => {
+            sortByDeadline();
+        });
+
+        //-----初期化-----
+        load();
+        render();
+
+    </script>
+</body>
+</html>
